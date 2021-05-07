@@ -1,98 +1,77 @@
-import React, { useState, useEffect } from 'react'
-import { StyleSheet, View, FlatList, Alert } from 'react-native'
+import React, { useContext } from 'react'
+import { useFonts } from '@expo-google-fonts/inter';
+import { StyleSheet, View, FlatList } from 'react-native'
 import HeaderComponent from '../components/HeaderComponent'
 import { ListItem } from'react-native-elements';
-import * as SQLite from 'expo-sqlite';
-import cocktailApi from '../services/cocktailApi'
+import { StateContext } from '../state/index'
+import { deleteId } from '../state/actions';
+import * as Animatable from 'react-native-animatable';
+import { ActivityIndicator } from 'react-native';
+import TouchableScale from 'react-native-touchable-scale';
 
 export default function Favourites({navigation, route}) {
-    const [favouritesList, setFavouritesList] = useState([])
-    const [drinkToModal, setDrinkToModal] = useState(null)
-    let drinks = []
 
-    const db = SQLite.openDatabase('favouritesdb.db');
+    const { state, dispatch } = useContext(StateContext)
+    const favourites = [...state.favourites]
 
-    useEffect(() => {
-        db.transaction((tx) => {
-            tx.executeSql('create table if not exists drink (id text);');
-        });
-        updateList();   
-    }, [])
-    useEffect(() => {
-        if(route.params)  {
-            saveItem(route.params.drink.idDrink)
-        }
-    }, [route.params])
-
-    const dropDatabaseTablesAsync = async () => {
-        return new Promise((resolve, reject) => {
-          db.transaction(tx => {
-            tx.executeSql(
-              'drop table drink',
-              [],
-              (_, result) => { resolve(result) },
-              (_, error) => { console.log("error dropping drink table"); reject(error)
-              }
-            )
-          })
-        })
-      }
-
-    const saveItem = (id) => {
-        if(favouritesList.some(e => e.id === id)) {
-            Alert.alert('', "Cocktail is already in favourites")
-        } else {
-            
-            db.transaction((tx) => {
-                tx.executeSql('insert into drink (id) values (?);', [id]);    
-                }, null, updateList
-            )
-        }
-    }
-    const updateList = () => {
-        db.transaction((tx) => {
-            tx.executeSql('select * from drink;', [], (_, { rows }) =>
-                setFavouritesList(rows._array)
-            ); 
-        });
-    }
-    const deleteItem = (id) => {
-        db.transaction(
-            tx => {
-                tx.executeSql(`delete from drink where id = ?;`, [id]);
-            }, null, updateList
-        )    
-    }
+    let font = require('../assets/fonts/Questrial.ttf')
+    let [fontsLoaded] = useFonts({
+        font
+    });
 
     const renderItem = ({item}) => (
-        <ListItem onPress={() => fetchDrinkById(item.id)} style={{backgroundColor: 'blue', width: '100%'}} bottomDivider>
+        <ListItem 
+            Component={TouchableScale} 
+            friction={90}
+            tension={100}
+            activeScale={0.95}
+            underlayColor='#f3f3f3' 
+            onPress={() => navigation.navigate('Modal', { id: item.idDrink })} 
+            style={{width: '100%'}} 
+            containerStyle={styles.item} 
+            bottomDivider
+        >
             <ListItem.Content>
-                <ListItem.Title style={{color: 'black', fontSize: 10}}>{item.id}</ListItem.Title>
+                <ListItem.Title adjustsFontSizeToFit={true} numberOfLines={1} style={{color: '#000000', fontSize: 25}}>{item.strDrink}</ListItem.Title>
             </ListItem.Content>
-            <ListItem.Chevron name='delete' onPress={() => deleteItem(item.id)} size={25} color='red'/>
+            <ListItem.Chevron name='trash' onPress={() => deleteItem(item.idDrink)} size={25} color='red'/>
         </ListItem>
     )
 
-    const fetchDrinkById = async (id) => {
-        const response = await cocktailApi.searchById(id);
-        setDrinkToModal(response.drinks[0]);
-        handleNavigation()
-    };
+    const deleteItem = (id) => {
+        dispatch(deleteId(id))
+    }
 
-    const handleNavigation = () => {
-        navigation.navigate('Modal', {drink: drinkToModal})
+    if(!fontsLoaded) {
+        return(
+            <View style={styles.safeArea}>
+                <ActivityIndicator size={80} color='#000000'/>
+            </View>
+        )
+    }
+
+    if(!favourites.length > 0) {
+        return (
+            <View style={styles.safeArea}>
+                <HeaderComponent />
+                <View style={styles.container}>
+                    <Animatable.Text style={{fontSize: 25, fontFamily: 'font'}} animation='rubberBand' delay={2500} iterationDelay={2000} iterationCount='infinite'>It is empty in here!</Animatable.Text>
+                </View>
+            </View>
+        )
     }
 
     return(
         <View style={styles.safeArea}>
             <HeaderComponent />
-            <View style={styles.container}>        
+            <View style={styles.container}>
                 <FlatList 
-                    style={{width: '100%', marginTop: 16}}
-                    keyExtractor={item => item.id} 
-                    data={favouritesList}
+                    style={{width: '100%', marginTop: 10}}
+                    keyExtractor={item => item.idDrink} 
+                    data={state.favourites}
                     renderItem={renderItem} 
-                />   
+                    contentContainerStyle={{justifyContent: 'center', alignItems: 'center'}}
+                />
             </View>
         </View>
     )
@@ -101,6 +80,7 @@ const styles = StyleSheet.create({
     safeArea: {
         display: 'flex',
         flex: 1,
+        backgroundColor: '#fff'
     },
     container: {
         display: 'flex',
@@ -108,4 +88,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    placeholder: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'red',
+        width: 100,
+        height: 500
+    },
+    item: {
+        width: '95%' ,
+        shadowColor: '#000',
+        marginTop: 10,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 2,
+        borderRadius: 26,
+    }
 });

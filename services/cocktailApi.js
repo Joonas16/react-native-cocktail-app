@@ -7,12 +7,11 @@ const searchByName = async (name) => {
     return response.data;
 };
 const searchByIngredient = async (ingredient) => {
-    const response = await axios.get(`${BASEURL}/search.php?i=${ingredient}`);
+    const response = await axios.get(`${BASEURL}/filter.php?i=${ingredient}`);
     return response.data;
 };
 const searchById = async (id) => {
     const response = await axios.get(`${BASEURL}/lookup.php?i=${id}`);
-    console.log(response.data)
     return response.data;
 };
 const getRandomCocktail = async (count) => {

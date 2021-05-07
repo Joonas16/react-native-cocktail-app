@@ -1,58 +1,126 @@
 import React, {useEffect, useState} from 'react'
-import { Text, StyleSheet, View, ScrollView, ActivityIndicator, Animated } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { useFonts } from '@expo-google-fonts/inter';
+import { Text, StyleSheet, View, ActivityIndicator, FlatList, Animated, TouchableHighlight } from 'react-native'
 import HeaderComponent from '../components/HeaderComponent'
 import { ListItem, Avatar } from 'react-native-elements'
 import cocktailApi from '../services/cocktailApi'
+import TouchableScale from 'react-native-touchable-scale';
 
 export default function Home({ navigation }) {
 
     const [drinkList, setDrinkList] = useState([])
-    const [categoryList, setCategoryList] = useState(null)
+    const [isRefreshing, setIsRefreshing] = useState(false)
+    const[ indexToAnimate, setIndexToAnimate] = useState(null)
+    let font = require('../assets/fonts/Questrial.ttf')
+    let [fontsLoaded] = useFonts({
+        font
+    });
 
+    const AnimatedTouchable = Animated.createAnimatedComponent(TouchableHighlight)
 
-    useEffect(() => {
-        const fetchRandomDrinks = async () => {
+    const fetchRandomDrinks = async (count) => {
+
+        // Initial fetching
+        if(!count) {
             // getRandomCocktail gets count as parameter, how many cocktails you want to get
             const response = await cocktailApi.getRandomCocktail(10);
             setDrinkList(response);
-        };
-        const fetchCategories = async () => {
-            // getCategories fetches all categories
-            const response = await cocktailApi.getCategories();
-            setCategoryList(response);
-        };
+            setIsRefreshing(false)
+
+        // onRefresh    
+        } else {
+            const response = await cocktailApi.getRandomCocktail(count);
+            setDrinkList([...drinkList, ...response]);
+            setIsRefreshing(false)
+        }
+    };
+
+    // First fetch
+    useEffect(() => {
         fetchRandomDrinks();
-        fetchCategories()
     }, []);
+
+    const onRefresh = () => {
+        setIsRefreshing(true)
+        fetchRandomDrinks()
+    }
+
+    const handleGetMore = () => {
+        setIsRefreshing(true)
+        fetchRandomDrinks(1)
+    }
     
+    const renderFooter = () => {
+        try {
+            if (isRefreshing) {
+                return (
+                    <View style={{ marginTop: 10, marginBottom: 10 }}>
+                        <ActivityIndicator size={80} color="#000000" />
+                    </View>
+                )
+            }
+            return null
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const renderItem = ({ item, index }) => {
+        let length = item.drinks[0].strDrink.length
+        if (length > 9) {
+            length = 2
+        } else {
+            length = 1
+        }
+        return (
+            <ListItem 
+                Component={TouchableScale}
+                friction={90}
+                tension={100}
+                activeScale={0.95} 
+                underlayColor='#f3f3f3' 
+                onPress={() => navigation.navigate('Modal', { id: item.drinks[0].idDrink })} 
+                containerStyle={styles.listItem}
+            >
+                <Avatar size={150} avatarStyle={{ borderRadius: 16, marginLeft: 10 }} source={{ uri: item.drinks[0].strDrinkThumb }} />
+                <ListItem.Content>
+                    <ListItem.Title adjustsFontSizeToFit={true} numberOfLines={2} style={styles.listItemText}>{item.drinks[0].strDrink}</ListItem.Title>
+                    <ListItem.Subtitle adjustsFontSizeToFit={true} numberOfLines={1} style={styles.listItemSub}>{item.drinks[0].strCategory}</ListItem.Subtitle>
+                </ListItem.Content>
+                <ListItem.Chevron color='#000000' size={30} />
+            </ListItem>
+        )
+    }
+
+    if(!fontsLoaded) {
+        return(
+            <View style={styles.container}>
+                <ActivityIndicator size={80} color='#000000'/>
+            </View>
+        )
+    }
+
     return(
         <View style={styles.safeArea}>
+            <StatusBar style='dark' />
             <HeaderComponent />
             <View style={styles.container}>
                 <View style={styles.top}>
                     <View style={styles.title}>
                         <Text style={styles.textTitle}>popular drinks</Text>
                     </View>
-                    <ScrollView 
-                        style={styles.scrollView}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        {
-                            drinkList.length > 0 ?
-                            drinkList.map((item, index) => (
-                                <ListItem containerStyle={styles.listItem} key={index} bottomDivider onPress={() => navigation.navigate('Modal', {drink: item.drinks[0]})}>
-                                    <Avatar size={150} avatarStyle={{borderRadius: 16}} source={{uri: item.drinks[0].strDrinkThumb}} />
-                                    <ListItem.Content>
-                                        <ListItem.Title style={styles.listItemText}>{item.drinks[0].strDrink}</ListItem.Title>
-                                        <ListItem.Subtitle>{item.drinks[0].strCategory}</ListItem.Subtitle>
-                                    </ListItem.Content>
-                                    <ListItem.Chevron color='#000000' size={30}/>
-                                </ListItem>
-                            ))
-                            : <ActivityIndicator size='large' color='#FF0000' />
-                        }
-                    </ScrollView>
+                    <FlatList 
+                        contentContainerStyle={{alignSelf: 'stretch'}}
+                        data={drinkList}
+                        renderItem={renderItem}
+                        keyExtractor={(item, index) => `${item.drinks[0].idDrink} + ${index}`}
+                        onRefresh={() => onRefresh()}
+                        refreshing={isRefreshing}
+                        onEndReached={handleGetMore}
+                        onEndReachedThreshold={0.1}
+                        ListFooterComponent={renderFooter}
+                    />
                 </View>
             </View>
         </View>
@@ -62,6 +130,7 @@ const styles = StyleSheet.create({
     safeArea: {
         display: 'flex',
         flex: 1,
+        backgroundColor: '#fff'
     },
     container: {
         display: 'flex',
@@ -84,27 +153,34 @@ const styles = StyleSheet.create({
     listItem: {
         paddingHorizontal: 0,
         paddingVertical: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.8,
+        shadowRadius: 2,
+        margin: 10,
+        borderRadius: 26,
     },
-    scrollView: {
-        marginTop: 10,
-
+    placeholder: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 1
+    },
+    title: {
+        paddingLeft: 10
     },
     textTitle: {
-        fontSize: 20,
-        fontWeight: '300',
+        fontSize: 25,
+        fontFamily: 'font',
         marginBottom: 10,
         textTransform: 'uppercase',
-        
     },
     listItemText: {
         fontSize: 20,
+        fontFamily: 'font',
     },
-    background: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        height: '100%',
-    },
+    listItemSub: {
+        fontFamily: 'font',
+        fontSize: 15
+    }
 });
   

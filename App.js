@@ -5,7 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Icon } from 'react-native-elements'
 import { useFonts } from '@expo-google-fonts/inter';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StateProvider } from './state/index'
 import * as Device from 'expo-device';
 
 import Home from './views/Home';
@@ -53,18 +53,20 @@ function App() {
 
   return (
       <NavigationContainer>
-        <Stack.Navigator headerMode='none'>
-          <Stack.Screen name='Main' component={BottomTabNavigator} />
-          <Stack.Screen  
-            options={{
-              transitionSpec: {
-                open: config,
-                close: config,
-              },
-            }} 
-            name='Modal' 
-            component={DrinkModal} />
-        </Stack.Navigator>
+        <StateProvider>
+          <Stack.Navigator headerMode='none'>
+            <Stack.Screen name='Main' component={BottomTabNavigator} />
+            <Stack.Screen  
+              options={{
+                transitionSpec: {
+                  open: config,
+                  close: config,
+                },
+              }} 
+              name='Modal' 
+              component={DrinkModal} />
+          </Stack.Navigator>
+        </StateProvider>
       </NavigationContainer>
   );
 }
@@ -95,12 +97,13 @@ const navBar = {
     bottom: Device.brand === 'Apple' ? 0 : 0
   },
   tabStyle: {
-    paddingBottom: Device.brand === 'Apple' ? 20 : 10
+    paddingBottom: Device.brand === 'Apple' ? 25 : 10
   },
   style: {
     height: '10%',
     borderTopColor: '#c3c3c3',
-  }
+  },
+  keyboardHidesTabBar: true
 }
 
 

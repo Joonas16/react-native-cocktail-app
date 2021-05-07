@@ -1,23 +1,55 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useContext } from 'react'
 import { Text, View, ActivityIndicator, StyleSheet, ScrollView} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image, Card, Button } from 'react-native-elements'
 import ModalHeaderComponent from '../components/ModalHeaderComponent'
-import {saveItem, openDatabase} from '../services/db'
+import { StateContext } from '../state/index'
+import { addToFavourites } from '../state/actions'
+import cocktailApi from '../services/cocktailApi'
+import { Alert } from 'react-native';
+import { deleteId } from '../state/actions';
 
 export default function DrinkModal({navigation, route}) {
 
+    const { state, dispatch } = useContext(StateContext)
     const [drink, setDrink] = useState(null)
     const ingredients = []
 
+    const fetchDrink = async () => {
+        const response = await cocktailApi.searchById(route.params.id);
+        setDrink(response.drinks[0]);
+    };
+
     useEffect(() => {
-        setDrink(route.params.drink)
+        fetchDrink() 
     }, [route.params])
 
     if (!drink) {
         return <ActivityIndicator size='large' />
     }
-
+    const handleAddingToFavourites = () => {
+        dispatch(addToFavourites(drink))
+        Alert.alert('Success', 'Drink added to favourites')
+    }
+    const raiseAlert = () => {
+        Alert.alert(
+            "Confirmation",
+            `Are you sure you want to delete "${drink.strDrink}" from your favourites?`,
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel"
+                },
+                { 
+                    text: "Yes", 
+                    onPress: () => handleDelete() 
+                }
+            ]
+        );
+    }
+    const handleDelete = () => {
+        dispatch(deleteId(drink.idDrink))
+        navigation.goBack()
+    }
     var i = 1
     const getIngredients = (obj) => {
         while (obj['strIngredient'+i]) {
@@ -26,7 +58,7 @@ export default function DrinkModal({navigation, route}) {
         }
     }
     getIngredients(drink)
-    
+
     return(
         <View style={styles.container}>
             <ModalHeaderComponent drink={drink} navigation={navigation} />
@@ -69,13 +101,25 @@ export default function DrinkModal({navigation, route}) {
                         <Text style={styles.instructions}>{drink.strInstructions}</Text>
                     </View>
                 </Card>
-                <Button 
-                    title='ADD TO FAVOURITES' 
-                    titleStyle={{color: '#FF0000'}}
-                    buttonStyle={{backgroundColor: 'black'}}
-                    containerStyle={{width: '100%', marginVertical: 10, borderRadius: 7}}
-                    onPress={() => navigation.navigate('Main', { screen: 'Favourites', params: {drink: drink}})}
-                />
+                {
+                    !(state.favourites.filter(e => e.idDrink === drink.idDrink).length > 0) ?
+                     <Button 
+                        title='ADD TO FAVOURITES' 
+                        titleStyle={{color: '#FF0000'}}
+                        buttonStyle={{backgroundColor: 'black'}}
+                        containerStyle={{width: '100%', marginVertical: 10, borderRadius: 7}}
+                        onPress={() => handleAddingToFavourites()}
+                    />
+                    :
+                    <Button
+                        title='DELETE FROM FAVOURITES'
+                        titleStyle={{ color: '#FF0000' }}
+                        buttonStyle={{ backgroundColor: 'black' }}
+                        containerStyle={{ width: '100%', marginVertical: 10, borderRadius: 7 }}
+                        onPress={() => raiseAlert()}
+                    />
+                }
+               
       </ScrollView>
     </View>
     )
@@ -84,7 +128,8 @@ export default function DrinkModal({navigation, route}) {
 const styles = StyleSheet.create({
     container: {
       flex: 1,
-      paddingBottom: 20
+      paddingBottom: 20,
+      backgroundColor: '#fff'
     },
     scrollView: {
       marginHorizontal: 20,
