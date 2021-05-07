@@ -67,6 +67,7 @@ export default function Home({ navigation }) {
     }
 
     const renderItem = ({ item, index }) => {
+        // If drink title longer than 9, render text on two lines, otherwise 1 line
         let length = item.drinks[0].strDrink.length
         if (length > 9) {
             length = 2
