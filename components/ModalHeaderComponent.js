@@ -15,9 +15,10 @@ export default function ModalHeaderComponent(props) {
     if(!fontsLoaded) {
         return <ActivityIndicator color='#FF0000' size='large' />
     }
-    // {text: `${title}`, style: { fontSize: 30, fontFamily: 'font1', color: '#FF0000'}}
+    
     return (
         <Header
+            centerContainerStyle={{ justifyContent: 'center', alignItems: 'center'}}
             backgroundColor='#fff'
             leftComponent={() => <Icon name='chevron-left' color='#FF0000' size={32} onPress={() => navigation.navigate('Main')} />}
             centerComponent={() => <Text adjustsFontSizeToFit={true} numberOfLines={1} style={{ fontSize: 30, fontFamily: 'font1', color: '#FF0000'}} >{title}</Text>}

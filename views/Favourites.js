@@ -1,18 +1,20 @@
 import React, { useContext } from 'react'
 import { useFonts } from '@expo-google-fonts/inter';
-import { StyleSheet, View, FlatList } from 'react-native'
+import { View, FlatList, Alert, StyleSheet, Text, ActivityIndicator } from 'react-native'
 import HeaderComponent from '../components/HeaderComponent'
-import { ListItem } from'react-native-elements';
+import { ListItem, Button } from'react-native-elements';
 import { StateContext } from '../state/index'
 import { deleteId } from '../state/actions';
 import * as Animatable from 'react-native-animatable';
-import { ActivityIndicator } from 'react-native';
 import TouchableScale from 'react-native-touchable-scale';
+import { AntDesign } from '@expo/vector-icons';
 
-export default function Favourites({navigation, route}) {
+export default function Favourites({ navigation }) {
 
     const { state, dispatch } = useContext(StateContext)
     const favourites = [...state.favourites]
+
+    const AnimatableIcon = Animatable.createAnimatableComponent(AntDesign)
 
     let font = require('../assets/fonts/Questrial.ttf')
     let [fontsLoaded] = useFonts({
@@ -34,12 +36,25 @@ export default function Favourites({navigation, route}) {
             <ListItem.Content>
                 <ListItem.Title adjustsFontSizeToFit={true} numberOfLines={1} style={{color: '#000000', fontSize: 25}}>{item.strDrink}</ListItem.Title>
             </ListItem.Content>
-            <ListItem.Chevron name='trash' onPress={() => deleteItem(item.idDrink)} size={25} color='red'/>
+            <ListItem.Chevron name='trash' onPress={() => deleteDrink(item)} size={25} color='red'/>
         </ListItem>
     )
 
-    const deleteItem = (id) => {
-        dispatch(deleteId(id))
+    const deleteDrink = (drink) => {
+        Alert.alert(
+            "Confirmation",
+            `Are you sure you want to delete "${drink.strDrink}" from your favourites?`,
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel"
+                },
+                {
+                    text: "Yes",
+                    onPress: () => dispatch(deleteId(drink.idDrink))
+                }
+            ]
+        );
     }
 
     if(!fontsLoaded) {
@@ -55,7 +70,16 @@ export default function Favourites({navigation, route}) {
             <View style={styles.safeArea}>
                 <HeaderComponent />
                 <View style={styles.container}>
-                    <Animatable.Text style={{fontSize: 25, fontFamily: 'font'}} animation='rubberBand' delay={2500} iterationDelay={2000} iterationCount='infinite'>It is empty in here!</Animatable.Text>
+                    <AnimatableIcon name="exception1" size={100} color="black" animation='rubberBand' iterationDelay={1500} iterationCount='infinite'/>
+                    <Text style={styles.placeholderText}>It is empty in here!</Text>
+                    <Button
+                        raised
+                        titleStyle={{ fontFamily: 'font', fontSize: 20 }}
+                        title='EXPLORE'
+                        onPress={() => navigation.navigate('Home')}
+                        containerStyle={styles.button}
+                        buttonStyle={{ backgroundColor: '#FF0000' }}
+                    />
                 </View>
             </View>
         )
@@ -103,5 +127,18 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.8,
         shadowRadius: 2,
         borderRadius: 26,
+    },
+    button: {
+        width: '55%',
+        marginTop: '5%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.8,
+        shadowRadius: 2,
+    },
+    placeholderText: { 
+        fontSize: 25, 
+        fontFamily: 'font', 
+        marginTop: 10 
     }
 });

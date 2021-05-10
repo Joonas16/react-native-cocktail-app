@@ -13,7 +13,7 @@ export default function HeaderComponent() {
     return (
         <Header 
             backgroundColor='#fff'
-            centerComponent={{text: 'Cocktailz', style: { fontSize: 30, fontFamily: 'font1', color: '#FF0000'}}}
+            centerComponent={{text: 'Cocktailz', style: { fontSize: 30, fontFamily: 'font1', color: '#FF0000' }}}
         />
     )
 }

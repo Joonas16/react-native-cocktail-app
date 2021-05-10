@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useFonts } from '@expo-google-fonts/inter';
 import { StyleSheet, View, Text, FlatList, ActivityIndicator, Keyboard } from 'react-native'
 import { Input, CheckBox, Icon, Button, ListItem, Avatar } from 'react-native-elements';
 import HeaderComponent from '../components/HeaderComponent';
 import cocktailApi from '../services/cocktailApi'
 import TouchableScale from 'react-native-touchable-scale';
+import Loading from '../components/Loading'
 
-export default function Search({navigation}) {
+export default function Search({navigation, route}) {
     const [name, setName] = useState(true)
     const [ingredient, setIngredient] = useState(false)
     const [input, setInput] = useState('')
@@ -14,6 +15,18 @@ export default function Search({navigation}) {
     const [drinkList, setDrinkList] = useState([])
     const [drinkListByIngredient, setDrinkListByIngredient] = useState([])
     const [error, setError] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        if(!route.params?.search) return
+
+        try {
+            setInput(route.params.search)
+            handleCheck('ingredient')
+        } catch (error) {
+            console.log(error)
+        }
+    }, [route.params?.search])
 
     let FONT_SIZE = 15
     let font = require('../assets/fonts/Questrial.ttf')
@@ -37,7 +50,11 @@ export default function Search({navigation}) {
     }
 
     const fetchItems = async (type) => {
+        setIsLoading(true)
         Keyboard.dismiss()
+
+        if(input === '') return
+
         if(type === 'name') {
             const response = await cocktailApi.searchByName(input);
             if(!response || !response.drinks) {
@@ -47,6 +64,7 @@ export default function Search({navigation}) {
                 setDrinkList(response);
                 console.log('results found using type name')
             }
+            setIsLoading(false)
         } else {
             const response = await cocktailApi.searchByIngredient(input);
             if(response) {
@@ -56,7 +74,9 @@ export default function Search({navigation}) {
                 setError(`No drinks were found by ingredient: ${input}`)
                 console.log('No object was found using type ingredient')
             }
+            setIsLoading(false)
         }
+        setInput('')
     }
 
     const renderItem = ({ item }) => {
@@ -78,7 +98,7 @@ export default function Search({navigation}) {
                     onPress={() => navigation.navigate('Modal', { id: item.idDrink })} 
                     containerStyle={styles.listItem}
                 >
-                    <Avatar size={150} avatarStyle={{ borderRadius: 16 }} source={{ uri: item.strDrinkThumb }} />
+                    <Avatar size={150} avatarStyle={{ borderRadius: 16 }} source={{ uri: item.strDrinkThumb }} renderPlaceholderContent={<Loading />} />
                     <ListItem.Content>
                         <ListItem.Title adjustsFontSizeToFit={true} numberOfLines={length} style={styles.listItemText}>{item.strDrink}</ListItem.Title>
                         <ListItem.Subtitle adjustsFontSizeToFit={true} numberOfLines={1} style={styles.listItemSub}>{item.strCategory}</ListItem.Subtitle>
@@ -98,9 +118,9 @@ export default function Search({navigation}) {
                     bottomDivider 
                     onPress={() => navigation.navigate('Modal', { id: item.idDrink })}
                 >
-                    <Avatar size={150} avatarStyle={{ borderRadius: 16 }} source={{ uri: item.strDrinkThumb }} />
+                    <Avatar size={150} avatarStyle={{ borderRadius: 16 }} source={{ uri: item.strDrinkThumb }} renderPlaceholderContent={<Loading />} />
                     <ListItem.Content>
-                        <ListItem.Title style={styles.listItemText}>{item.strDrink}</ListItem.Title>
+                        <ListItem.Title style={styles.listItemText} adjustsFontSizeToFit={true} numberOfLines={length}>{item.strDrink}</ListItem.Title>
                     </ListItem.Content>
                     <ListItem.Chevron color='#000000' size={30} />
                 </ListItem>
@@ -130,7 +150,7 @@ export default function Search({navigation}) {
             <View style={styles.container}>
                 <View style={styles.search}>
                     <Input
-                        containerStyle={{ width: '50%', paddingTop: 15}}
+                        containerStyle={{ width: '60%', paddingTop: 15}}
                         style={{fontFamily: 'font'}}
                         placeholder='Search...'
                         label={`Search by ${type}`}
@@ -140,6 +160,8 @@ export default function Search({navigation}) {
                         onChangeText={(text) => setInput(text)}
                         onFocus={() => setError('')}
                         onSubmitEditing={() => fetchItems(type)}
+                        value={input}
+                        rightIcon={<Icon name='highlight-off' style={{marginLeft: 10}} size={15} onPress={() => setInput('')} />}
                     />
                     <View style={styles.buttonGroup}>
                         <CheckBox
@@ -183,7 +205,8 @@ export default function Search({navigation}) {
                         renderItem={renderItem}
                         keyExtractor={(item) => item.strDrink}
                         style={{ width: '90%'}}
-                        extraData={drinkList} 
+                        extraData={drinkList}
+                        ListEmptyComponent={isLoading && <ActivityIndicator color='#000000' size={50} />}
                     />
                 }
             </View>
@@ -206,7 +229,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        width: '90%'
+        width: '95%'
         
     },
     buttonGroup: {
@@ -219,8 +242,9 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.8,
         shadowRadius: 2,
-        margin: 10,
         borderRadius: 26,
+        marginHorizontal: 2,
+        marginVertical: 10,
     },
     scrollView: {
         marginTop: 10,

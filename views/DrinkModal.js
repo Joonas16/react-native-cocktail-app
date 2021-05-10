@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react'
+import { useFonts } from '@expo-google-fonts/inter';
 import { Text, View, ActivityIndicator, StyleSheet, ScrollView} from 'react-native'
 import { Image, Card, Button } from 'react-native-elements'
 import ModalHeaderComponent from '../components/ModalHeaderComponent'
@@ -13,6 +14,11 @@ export default function DrinkModal({navigation, route}) {
     const { state, dispatch } = useContext(StateContext)
     const [drink, setDrink] = useState(null)
     const ingredients = []
+
+    let font = require('../assets/fonts/Questrial.ttf')
+    let [fontsLoaded] = useFonts({
+        font
+    });
 
     const fetchDrink = async () => {
         const response = await cocktailApi.searchById(route.params.id);
@@ -59,6 +65,14 @@ export default function DrinkModal({navigation, route}) {
     }
     getIngredients(drink)
 
+    if(!fontsLoaded) {
+        return (
+            <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                <ActivityIndicator size={80} color='#000000'/>
+            </View>
+        )
+    }
+
     return(
         <View style={styles.container}>
             <ModalHeaderComponent drink={drink} navigation={navigation} />
@@ -79,16 +93,18 @@ export default function DrinkModal({navigation, route}) {
                         {
                             ingredients.length > 0 &&
                             ingredients.map((item, index) => (
-                                <View key={index} style={{flexBasis: '45%', marginTop: 10}}>
-                                    <Button 
-                                        title={item} 
-                                        titleStyle={
-                                            item.length > 12 ? 
-                                            styles.buttonTitleSmall : styles.buttonTitle
-                                        } 
-                                        buttonStyle={{backgroundColor: 'black', height: 35}}
-                                        containerStyle={{borderRadius: 7, width: '100%'}}
-                                    />
+                                <View key={index} style={{flexBasis: '45%', marginTop: 10, width: 180, alignItems: 'center'}}>
+                                    <View style={{width: '90%'}}>
+                                        <Button
+                                            titleProps={{adjustsFontSizeToFit: true}}
+                                            title={item} 
+                                            titleStyle={styles.buttonTitle} 
+                                            buttonStyle={{ backgroundColor: '#FF0000', height: 35}}
+                                            containerStyle={{borderRadius: 7, width: '100%'}}
+                                            onPress={() => navigation.navigate('Search', { search: item })}
+                                        />
+                                    </View>
+                                    
                                 </View>
                             ))
                         }
@@ -105,17 +121,17 @@ export default function DrinkModal({navigation, route}) {
                     !(state.favourites.filter(e => e.idDrink === drink.idDrink).length > 0) ?
                      <Button 
                         title='ADD TO FAVOURITES' 
-                        titleStyle={{color: '#FF0000'}}
-                        buttonStyle={{backgroundColor: 'black'}}
+                        titleStyle={{color: '#fff'}}
+                        buttonStyle={{ backgroundColor: '#FF0000'}}
                         containerStyle={{width: '100%', marginVertical: 10, borderRadius: 7}}
                         onPress={() => handleAddingToFavourites()}
                     />
                     :
                     <Button
                         title='DELETE FROM FAVOURITES'
-                        titleStyle={{ color: '#FF0000' }}
-                        buttonStyle={{ backgroundColor: 'black' }}
-                        containerStyle={{ width: '100%', marginVertical: 10, borderRadius: 7 }}
+                        titleStyle={{ color: '#fff' }}
+                        buttonStyle={{ backgroundColor: '#FF0000' }}
+                        containerStyle={{ width: '100%', marginVertical: 10, borderRadius: 7, marginBottom: 10 }}
                         onPress={() => raiseAlert()}
                     />
                 }
@@ -136,6 +152,7 @@ const styles = StyleSheet.create({
     },
     text: {
       fontSize: 42,
+      fontFamily: 'font'
     },
     ingredientsWrapper: {
         display: 'flex',
@@ -146,23 +163,23 @@ const styles = StyleSheet.create({
     },
     card: {
         width: '100%',
-        backgroundColor: '#FFFFFF'
+        backgroundColor: '#FFFFFF',
+        borderRadius: 26
     },
     cardTitle: {
-        fontSize: 20
+        fontSize: 20,
+        fontFamily: 'font'
     },
     buttonTitle: {
-        color: '#FF0000', 
+        color: '#fff', 
         fontWeight: 'bold', 
-        fontSize: 15
-    },
-    buttonTitleSmall: {
-        color: '#FF0000', 
-        fontWeight: 'bold', 
-        fontSize: 12
+        fontSize: 15,
+        fontFamily: 'font',
+        margin: 2
     },
     instructions: {
         fontSize: 15,
         textTransform: 'capitalize',
+        fontFamily: 'font'
     },
   });

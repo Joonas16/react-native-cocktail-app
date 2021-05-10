@@ -6,12 +6,13 @@ import HeaderComponent from '../components/HeaderComponent'
 import { ListItem, Avatar } from 'react-native-elements'
 import cocktailApi from '../services/cocktailApi'
 import TouchableScale from 'react-native-touchable-scale';
+import Loading from '../components/Loading'
+import { Octicons } from '@expo/vector-icons';
 
 export default function Home({ navigation }) {
 
     const [drinkList, setDrinkList] = useState([])
     const [isRefreshing, setIsRefreshing] = useState(false)
-    const[ indexToAnimate, setIndexToAnimate] = useState(null)
     let font = require('../assets/fonts/Questrial.ttf')
     let [fontsLoaded] = useFonts({
         font
@@ -84,7 +85,7 @@ export default function Home({ navigation }) {
                 onPress={() => navigation.navigate('Modal', { id: item.drinks[0].idDrink })} 
                 containerStyle={styles.listItem}
             >
-                <Avatar size={150} avatarStyle={{ borderRadius: 16, marginLeft: 10 }} source={{ uri: item.drinks[0].strDrinkThumb }} />
+                <Avatar size={150} avatarStyle={{ borderRadius: 16, marginLeft: 10 }} source={{ uri: item.drinks[0].strDrinkThumb }} renderPlaceholderContent={<Loading />}/>
                 <ListItem.Content>
                     <ListItem.Title adjustsFontSizeToFit={true} numberOfLines={2} style={styles.listItemText}>{item.drinks[0].strDrink}</ListItem.Title>
                     <ListItem.Subtitle adjustsFontSizeToFit={true} numberOfLines={1} style={styles.listItemSub}>{item.drinks[0].strCategory}</ListItem.Subtitle>
@@ -110,6 +111,7 @@ export default function Home({ navigation }) {
                 <View style={styles.top}>
                     <View style={styles.title}>
                         <Text style={styles.textTitle}>popular drinks</Text>
+                        <Octicons style={{ marginLeft: 10 }} name="flame" size={24} color="#FF0000" />
                     </View>
                     <FlatList 
                         contentContainerStyle={{alignSelf: 'stretch'}}
@@ -167,7 +169,9 @@ const styles = StyleSheet.create({
         flex: 1
     },
     title: {
-        paddingLeft: 10
+        paddingLeft: 10,
+        display: 'flex',
+        flexDirection: 'row'
     },
     textTitle: {
         fontSize: 25,
